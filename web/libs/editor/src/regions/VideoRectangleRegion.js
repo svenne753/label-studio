@@ -7,6 +7,44 @@ import { AreaMixin } from "../mixins/AreaMixin";
 import { onlyProps, VideoRegion } from "./VideoRegion";
 import { interpolateProp } from "../utils/props";
 
+/**
+ * An open-ended track (last keyframe interpolating) ends its lifespan at its last keyframe
+ * if the other track has keyframes after it.
+ */
+const closeOpenEnd = (sequence, other) => {
+  const last = sequence.at(-1);
+
+  if (!last?.enabled || !(other.at(-1)?.frame > last.frame)) return sequence;
+
+  return [...sequence.slice(0, -1), { ...last, enabled: false }];
+};
+
+// [start, end] frame ranges in which the track is visible, sorted and disjoint
+const visibleRanges = (sequence) =>
+  sequence.map((kp, i) => {
+    if (!kp.enabled) return [kp.frame, kp.frame];
+
+    const next = sequence[i + 1];
+
+    return [kp.frame, next ? next.frame - 1 : Number.POSITIVE_INFINITY];
+  });
+
+const rangesOverlap = (a, b) => {
+  let i = 0;
+  let j = 0;
+
+  while (i < a.length && j < b.length) {
+    const [aStart, aEnd] = a[i];
+    const [bStart, bEnd] = b[j];
+
+    if (aStart <= bEnd && bStart <= aEnd) return true;
+    if (aEnd < bEnd) i++;
+    else j++;
+  }
+
+  return false;
+};
+
 const Model = types
   .model("VideoRectangleRegionModel", {
     type: "videorectangleregion",
@@ -77,6 +115,23 @@ const Model = types
       }
 
       return { head, tail };
+    },
+
+    /**
+     * Combined keyframe sequence of this track and `other`, or null if they can't be merged:
+     * both must be tracks of the same type on the same video that are never visible on the same frame.
+     * Hidden gaps between the tracks stay hidden.
+     */
+    getMergedSequence(other) {
+      if (!other || other === self || other.type !== self.type || other.object !== self.object) return null;
+      if (!self.sequence.length || !other.sequence.length) return null;
+
+      const own = closeOpenEnd(self.sequence, other.sequence);
+      const others = closeOpenEnd(other.sequence, self.sequence);
+
+      if (rangesOverlap(visibleRanges(own), visibleRanges(others))) return null;
+
+      return [...own, ...others].sort((a, b) => a.frame - b.frame);
     },
   }))
   .actions((self) => ({

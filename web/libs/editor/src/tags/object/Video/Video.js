@@ -178,6 +178,19 @@ const Model = types
       return { start, end };
     },
 
+    /**
+     * Two tracks can be merged when both are editable and never visible on the same frame
+     */
+    canMergeRegions(regions) {
+      if (regions?.length !== 2) return false;
+
+      const [a, b] = regions;
+
+      if (a.isReadOnly() || b.isReadOnly()) return false;
+
+      return !!a.getMergedSequence?.(b);
+    },
+
     get persistentValuesKey() {
       return "ls:video-tag:settings";
     },
@@ -522,6 +535,34 @@ const Model = types
           region.replaceSequence(split.head);
 
           return newRegion;
+        } finally {
+          annotation.history.unfreeze(historyKey);
+        }
+      },
+
+      /**
+       * Merge two tracks into one. The track starting earlier survives with its labels,
+       * per-region results, meta, score and origin and gets the keyframes of the other,
+       * which is deleted.
+       * @param {Object[]} regions exactly two regions to merge
+       * @returns {Object|undefined} merged region
+       */
+      mergeRegions(regions) {
+        const { annotation } = self;
+
+        if (!annotation || annotation.isReadOnly() || !self.canMergeRegions(regions)) return;
+
+        const [earlier, later] = [...regions].sort((a, b) => a.sequence[0].frame - b.sequence[0].frame);
+        const sequence = earlier.getMergedSequence(later);
+        const historyKey = `merge-tracks-${earlier.id}`;
+
+        annotation.history.freeze(historyKey);
+        try {
+          earlier.replaceSequence(sequence);
+          later.deleteRegion();
+          annotation.selectAreas([earlier]);
+
+          return earlier;
         } finally {
           annotation.history.unfreeze(historyKey);
         }

@@ -404,6 +404,15 @@ export const DEFAULT_HOTKEYS = [
     description: "Split the selected track into two objects at the current frame",
     active: true,
   },
+  {
+    id: 3851,
+    section: "video",
+    element: "video:merge-tracks",
+    label: "Merge Tracks",
+    key: "alt+j",
+    description: "Merge the two selected tracks into one object",
+    active: true,
+  },
 
   // Editor - Time Series Controls
   {

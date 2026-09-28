@@ -4,13 +4,14 @@ import {
   IconInterpolationRemove,
   IconKeypointAdd,
   IconKeypointDelete,
+  IconTrackMerge,
   IconTrackSplit,
 } from "@humansignal/icons";
 import { TimelineContext } from "../../Context";
 import { ControlButton } from "../../Controls";
 import type { TimelineExtraControls } from "../../Types";
 
-type Actions = "keypoint_add" | "keypoint_remove" | "lifespan_add" | "lifespan_remove" | "track_split";
+type Actions = "keypoint_add" | "keypoint_remove" | "lifespan_add" | "lifespan_remove" | "track_split" | "track_merge";
 type DataType = {
   frame: number;
 };
@@ -29,6 +30,7 @@ export const Controls: FC<TimelineExtraControls<Actions, DataType>> = ({ onActio
 
   const selectedRegions = regions.filter(({ selected }) => selected);
   const canSplit = !readonly && selectedRegions.length === 1 && !!selectedRegions[0].canSplit;
+  const canMerge = !readonly && selectedRegions.length === 2 && selectedRegions.every((region) => region.canMerge);
 
   const onKeypointToggle = useCallback(
     (e: MouseEvent) => {
@@ -73,6 +75,19 @@ export const Controls: FC<TimelineExtraControls<Actions, DataType>> = ({ onActio
     [onAction, canSplit, position],
   );
 
+  const onTrackMerge = useCallback(
+    (e: MouseEvent) => {
+      // hotkey triggers the handler even if the button is disabled
+      if (!canMerge) return;
+
+      e?.preventDefault?.();
+      onAction?.(e, "track_merge", {
+        frame: position,
+      });
+    },
+    [onAction, canMerge, position],
+  );
+
   const keypointIcon = useMemo(() => {
     if (canAddKeypoint) {
       return <IconKeypointAdd />;
@@ -106,6 +121,15 @@ export const Controls: FC<TimelineExtraControls<Actions, DataType>> = ({ onActio
         hotkey="video:split-track"
       >
         <IconTrackSplit />
+      </ControlButton>
+
+      <ControlButton
+        onClick={onTrackMerge}
+        disabled={!canMerge}
+        tooltip="Merge Selected Tracks"
+        hotkey="video:merge-tracks"
+      >
+        <IconTrackMerge />
       </ControlButton>
     </>
   );

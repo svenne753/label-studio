@@ -109,6 +109,8 @@ export interface TimelineRegion {
   locked?: boolean;
   /** can this region's track be split at the current position */
   canSplit?: boolean;
+  /** can the currently selected tracks be merged into one */
+  canMerge?: boolean;
 }
 
 export interface TimelineRegionKeyframe {

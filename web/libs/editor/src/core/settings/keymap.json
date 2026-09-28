@@ -215,6 +215,10 @@
     "key": "alt+s",
     "description": "Split selected track at current frame"
   },
+  "video:merge-tracks": {
+    "key": "alt+j",
+    "description": "Merge two selected tracks"
+  },
   "repeater:next-page": {
     "key": "alt+right",
     "description": "Next Page"

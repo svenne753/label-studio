@@ -496,6 +496,11 @@ const HtxVideoView = ({ item, store }) => {
     (_, action, data) => {
       const regions = item.regs.filter((reg) => reg.selected || reg.inSelection);
 
+      if (action === "track_merge") {
+        item.mergeRegions(regions);
+        return;
+      }
+
       regions.forEach((region) => {
         switch (action) {
           case "lifespan_add":
@@ -587,6 +592,8 @@ const HtxVideoView = ({ item, store }) => {
     [],
   );
 
+  const canMerge = item.canMergeRegions(item.regs.filter((reg) => reg.selected || reg.inSelection));
+
   const regions = item.regs.map((reg) => {
     const color = reg.style?.fillcolor ?? reg.tag?.fillcolor ?? defaultStyle.fillcolor;
     const label = reg.labels.join(", ") || "Empty";
@@ -604,6 +611,7 @@ const HtxVideoView = ({ item, store }) => {
       timeline,
       locked: reg.locked,
       canSplit: reg.canSplitAt?.(position) ?? false,
+      canMerge,
     };
   });
 
