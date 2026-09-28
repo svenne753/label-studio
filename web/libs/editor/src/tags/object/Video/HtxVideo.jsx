@@ -610,7 +610,7 @@ const HtxVideoView = ({ item, store }) => {
       sequence,
       timeline,
       locked: reg.locked,
-      canSplit: reg.canSplitAt?.(position) ?? false,
+      canSplit: item.canSplitRegion(reg, position),
       canMerge,
     };
   });

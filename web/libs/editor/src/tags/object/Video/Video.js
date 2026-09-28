@@ -179,6 +179,15 @@ const Model = types
     },
 
     /**
+     * A track can be split at `frame` when it is editable and visible at `frame` and after it
+     */
+    canSplitRegion(region, frame) {
+      if (!region || region.isReadOnly()) return false;
+
+      return !!region.canSplitAt?.(frame);
+    },
+
+    /**
      * Two tracks can be merged when both are editable and never visible on the same frame
      */
     canMergeRegions(regions) {
@@ -511,9 +520,9 @@ const Model = types
       splitRegion(region, frame) {
         const { annotation } = self;
 
-        if (!annotation || annotation.isReadOnly()) return;
+        if (!annotation || annotation.isReadOnly() || !self.canSplitRegion(region, frame)) return;
 
-        const split = region.getSplitSequences?.(frame);
+        const split = region.getSplitSequences(frame);
 
         if (!split) return;
 
