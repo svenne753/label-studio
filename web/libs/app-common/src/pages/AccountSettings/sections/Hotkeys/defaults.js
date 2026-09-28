@@ -395,6 +395,15 @@ export const DEFAULT_HOTKEYS = [
     description: "Hop forward quickly",
     active: true,
   },
+  {
+    id: 3850,
+    section: "video",
+    element: "video:split-track",
+    label: "Split Track",
+    key: "alt+s",
+    description: "Split the selected track into two objects at the current frame",
+    active: true,
+  },
 
   // Editor - Time Series Controls
   {

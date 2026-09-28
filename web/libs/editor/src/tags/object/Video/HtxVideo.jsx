@@ -508,6 +508,10 @@ const HtxVideoView = ({ item, store }) => {
           case "keypoint_remove":
             region.removeKeypoint(data.frame);
             break;
+          case "track_split":
+            // splitting is only allowed for a single selected region
+            if (regions.length === 1) item.splitRegion(region, data.frame);
+            break;
           default:
             console.warn("unknown action");
         }
@@ -599,6 +603,7 @@ const HtxVideoView = ({ item, store }) => {
       sequence,
       timeline,
       locked: reg.locked,
+      canSplit: reg.canSplitAt?.(position) ?? false,
     };
   });
 

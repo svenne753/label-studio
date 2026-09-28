@@ -488,6 +488,46 @@ const Model = types
       },
 
       /**
+       * Split a tracked region into two at `frame`: the original keeps the sequence
+       * up to and including `frame`, a new region (with the same labels, per-region
+       * results, meta, score and origin) gets the rest.
+       * @param {Object} region region to split
+       * @param {number} frame last frame of the original region
+       * @returns {Object|undefined} created region
+       */
+      splitRegion(region, frame) {
+        const { annotation } = self;
+
+        if (!annotation || annotation.isReadOnly()) return;
+
+        const split = region.getSplitSequences?.(frame);
+
+        if (!split) return;
+
+        const results = region.results
+          .map((result) => result.serialize())
+          .filter(Boolean)
+          .map((result) => ({ ...result, value: { ...result.value, sequence: split.tail } }));
+
+        if (!results.length) return;
+
+        const historyKey = `split-track-${region.id}`;
+
+        annotation.history.freeze(historyKey);
+        try {
+          const [newRegion] = annotation.appendResults(results) ?? [];
+
+          if (!newRegion) return;
+
+          region.replaceSequence(split.head);
+
+          return newRegion;
+        } finally {
+          annotation.history.unfreeze(historyKey);
+        }
+      },
+
+      /**
        * Create a new timeline region at a given `frame` (only if labels are selected) or edit an existing one if `region` is provided
        * @param {Object} options
        * @param {number} options.frame current frame under the cursor

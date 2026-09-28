@@ -1,10 +1,16 @@
 import { type FC, type MouseEvent, useCallback, useContext, useMemo } from "react";
-import { IconInterpolationAdd, IconInterpolationRemove, IconKeypointAdd, IconKeypointDelete } from "@humansignal/icons";
+import {
+  IconInterpolationAdd,
+  IconInterpolationRemove,
+  IconKeypointAdd,
+  IconKeypointDelete,
+  IconTrackSplit,
+} from "@humansignal/icons";
 import { TimelineContext } from "../../Context";
 import { ControlButton } from "../../Controls";
 import type { TimelineExtraControls } from "../../Types";
 
-type Actions = "keypoint_add" | "keypoint_remove" | "lifespan_add" | "lifespan_remove";
+type Actions = "keypoint_add" | "keypoint_remove" | "lifespan_add" | "lifespan_remove" | "track_split";
 type DataType = {
   frame: number;
 };
@@ -20,6 +26,9 @@ export const Controls: FC<TimelineExtraControls<Actions, DataType>> = ({ onActio
 
   const canAddKeypoint = closestKeypoint?.frame !== position;
   const canAddLifespan = closestKeypoint?.enabled === false;
+
+  const selectedRegions = regions.filter(({ selected }) => selected);
+  const canSplit = !readonly && selectedRegions.length === 1 && !!selectedRegions[0].canSplit;
 
   const onKeypointToggle = useCallback(
     (e: MouseEvent) => {
@@ -51,6 +60,19 @@ export const Controls: FC<TimelineExtraControls<Actions, DataType>> = ({ onActio
     [onAction, canAddLifespan, closestKeypoint?.frame],
   );
 
+  const onTrackSplit = useCallback(
+    (e: MouseEvent) => {
+      // hotkey triggers the handler even if the button is disabled
+      if (!canSplit) return;
+
+      e?.preventDefault?.();
+      onAction?.(e, "track_split", {
+        frame: position,
+      });
+    },
+    [onAction, canSplit, position],
+  );
+
   const keypointIcon = useMemo(() => {
     if (canAddKeypoint) {
       return <IconKeypointAdd />;
@@ -75,6 +97,15 @@ export const Controls: FC<TimelineExtraControls<Actions, DataType>> = ({ onActio
 
       <ControlButton onClick={onLifespanToggle} disabled={!closestKeypoint || readonly} tooltip="Toggle Interpolation">
         {interpolationIcon}
+      </ControlButton>
+
+      <ControlButton
+        onClick={onTrackSplit}
+        disabled={!canSplit}
+        tooltip="Split Track at Current Frame"
+        hotkey="video:split-track"
+      >
+        <IconTrackSplit />
       </ControlButton>
     </>
   );

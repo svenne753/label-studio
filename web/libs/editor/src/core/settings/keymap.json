@@ -211,6 +211,10 @@
     "key": "shift+alt+right",
     "description": "Hop Forward"
   },
+  "video:split-track": {
+    "key": "alt+s",
+    "description": "Split selected track at current frame"
+  },
   "repeater:next-page": {
     "key": "alt+right",
     "description": "Next Page"

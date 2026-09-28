@@ -107,6 +107,8 @@ export interface TimelineRegion {
   /** is this timeline region with spans */
   timeline?: boolean;
   locked?: boolean;
+  /** can this region's track be split at the current position */
+  canSplit?: boolean;
 }
 
 export interface TimelineRegionKeyframe {

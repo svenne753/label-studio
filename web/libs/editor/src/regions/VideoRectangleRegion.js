@@ -40,6 +40,44 @@ const Model = types
     getVisibility() {
       return true;
     },
+
+    /**
+     * Track can be split at `frame` when the region is visible at `frame`
+     * and has at least one visible frame after it.
+     */
+    canSplitAt(frame) {
+      const prev = self.closestKeypoint(frame, true);
+
+      if (!prev) return false;
+      if (!prev.enabled && prev.frame !== frame) return false;
+
+      return self.sequence.some((kp) => kp.frame > frame) || (prev.enabled && frame < self.object.length);
+    },
+
+    /**
+     * Split keyframe sequence at `frame`:
+     * - `head` keeps everything up to and including `frame`, ending the lifespan there;
+     * - `tail` contains everything after `frame`, starting at `frame + 1` if the track was continuous.
+     * Interpolated shapes at the boundary are materialized as keyframes, so both parts
+     * look exactly as the original track did.
+     */
+    getSplitSequences(frame) {
+      if (!self.canSplitAt(frame)) return null;
+
+      const prev = self.closestKeypoint(frame, true);
+      const current = self.sequence.find((kp) => kp.frame === frame);
+      const head = [
+        ...self.sequence.filter((kp) => kp.frame < frame),
+        { ...(current ?? self.getShape(frame)), frame, enabled: false },
+      ];
+      const tail = self.sequence.filter((kp) => kp.frame > frame);
+
+      if (prev.enabled && tail[0]?.frame !== frame + 1) {
+        tail.unshift({ ...self.getShape(frame + 1), frame: frame + 1, enabled: true });
+      }
+
+      return { head, tail };
+    },
   }))
   .actions((self) => ({
     updateShape(data, frame) {
