@@ -277,6 +277,8 @@ export { ReactComponent as IconThumbsUpOutline } from "./thumbs-up-outline.svg";
 export { ReactComponent as IconTimelinePause } from "./timeline-pause.svg";
 export { ReactComponent as IconTimelinePlay } from "./timeline-play.svg";
 export { ReactComponent as IconTimelineRegion } from "./timeline-region.svg";
+export { ReactComponent as IconTrackMerge } from "./track-merge.svg";
+export { ReactComponent as IconTrackSplit } from "./track-split.svg";
 export { ReactComponent as IconTrash } from "./trash.svg";
 export { ReactComponent as IconTrashAlt } from "./trash-alt.svg";
 export { ReactComponent as IconTrashRect } from "./trash-rect.svg";

@@ -496,6 +496,11 @@ const HtxVideoView = ({ item, store }) => {
     (_, action, data) => {
       const regions = item.regs.filter((reg) => reg.selected || reg.inSelection);
 
+      if (action === "track_merge") {
+        item.mergeRegions(regions);
+        return;
+      }
+
       regions.forEach((region) => {
         switch (action) {
           case "lifespan_add":
@@ -507,6 +512,10 @@ const HtxVideoView = ({ item, store }) => {
             break;
           case "keypoint_remove":
             region.removeKeypoint(data.frame);
+            break;
+          case "track_split":
+            // splitting is only allowed for a single selected region
+            if (regions.length === 1) item.splitRegion(region, data.frame);
             break;
           default:
             console.warn("unknown action");
@@ -583,6 +592,8 @@ const HtxVideoView = ({ item, store }) => {
     [],
   );
 
+  const canMerge = item.canMergeRegions(item.regs.filter((reg) => reg.selected || reg.inSelection));
+
   const regions = item.regs.map((reg) => {
     const color = reg.style?.fillcolor ?? reg.tag?.fillcolor ?? defaultStyle.fillcolor;
     const label = reg.labels.join(", ") || "Empty";
@@ -599,6 +610,8 @@ const HtxVideoView = ({ item, store }) => {
       sequence,
       timeline,
       locked: reg.locked,
+      canSplit: item.canSplitRegion(reg, position),
+      canMerge,
     };
   });
 

@@ -178,6 +178,28 @@ const Model = types
       return { start, end };
     },
 
+    /**
+     * A track can be split at `frame` when it is editable and visible at `frame` and after it
+     */
+    canSplitRegion(region, frame) {
+      if (!region || region.isReadOnly()) return false;
+
+      return !!region.canSplitAt?.(frame);
+    },
+
+    /**
+     * Two tracks can be merged when both are editable and never visible on the same frame
+     */
+    canMergeRegions(regions) {
+      if (regions?.length !== 2) return false;
+
+      const [a, b] = regions;
+
+      if (a.isReadOnly() || b.isReadOnly()) return false;
+
+      return !!a.getMergedSequence?.(b);
+    },
+
     get persistentValuesKey() {
       return "ls:video-tag:settings";
     },
@@ -485,6 +507,74 @@ const Model = types
 
       findRegion(id) {
         return self.regs.find((reg) => reg.cleanId === id);
+      },
+
+      /**
+       * Split a tracked region into two at `frame`: the original keeps the sequence
+       * up to and including `frame`, a new region (with the same labels, per-region
+       * results, meta, score and origin) gets the rest.
+       * @param {Object} region region to split
+       * @param {number} frame last frame of the original region
+       * @returns {Object|undefined} created region
+       */
+      splitRegion(region, frame) {
+        const { annotation } = self;
+
+        if (!annotation || annotation.isReadOnly() || !self.canSplitRegion(region, frame)) return;
+
+        const split = region.getSplitSequences(frame);
+
+        if (!split) return;
+
+        const results = region.results
+          .map((result) => result.serialize())
+          .filter(Boolean)
+          .map((result) => ({ ...result, value: { ...result.value, sequence: split.tail } }));
+
+        if (!results.length) return;
+
+        const historyKey = `split-track-${region.id}`;
+
+        annotation.history.freeze(historyKey);
+        try {
+          const [newRegion] = annotation.appendResults(results) ?? [];
+
+          if (!newRegion) return;
+
+          region.replaceSequence(split.head);
+
+          return newRegion;
+        } finally {
+          annotation.history.unfreeze(historyKey);
+        }
+      },
+
+      /**
+       * Merge two tracks into one. The track starting earlier survives with its labels,
+       * per-region results, meta, score and origin and gets the keyframes of the other,
+       * which is deleted.
+       * @param {Object[]} regions exactly two regions to merge
+       * @returns {Object|undefined} merged region
+       */
+      mergeRegions(regions) {
+        const { annotation } = self;
+
+        if (!annotation || annotation.isReadOnly() || !self.canMergeRegions(regions)) return;
+
+        const [earlier, later] = [...regions].sort((a, b) => a.sequence[0].frame - b.sequence[0].frame);
+        const sequence = earlier.getMergedSequence(later);
+        const historyKey = `merge-tracks-${earlier.id}`;
+
+        annotation.history.freeze(historyKey);
+        try {
+          earlier.replaceSequence(sequence);
+          later.deleteRegion();
+          annotation.selectAreas([earlier]);
+
+          return earlier;
+        } finally {
+          annotation.history.unfreeze(historyKey);
+        }
       },
 
       /**
